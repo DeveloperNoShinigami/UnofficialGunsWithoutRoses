@@ -1,9 +1,11 @@
 package lykrast.gunswithoutroses.entity;
 
+import lykrast.gunswithoutroses.customdamagesource.IndirectEntityDamageSource;
 import lykrast.gunswithoutroses.item.IBullet;
 import lykrast.gunswithoutroses.registry.ModEntities;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.IndirectEntityDamageSource;
@@ -22,6 +24,7 @@ public class BulletEntity extends Fireball {
 	protected boolean ignoreInvulnerability = false;
 	protected double knockbackStrength = 0;
 	protected int ticksSinceFired;
+	private Level level;
 
 	public BulletEntity(EntityType<? extends BulletEntity> p_i50160_1_, Level p_i50160_2_) {
 		super(p_i50160_1_, p_i50160_2_);
@@ -55,16 +58,16 @@ public class BulletEntity extends Fireball {
 	@Override
 	protected void onHitEntity(EntityHitResult raytrace) {
 		super.onHitEntity(raytrace);
-		if (!level.isClientSide) {
+		if (!this.level.isClientSide) {
 			Entity target = raytrace.getEntity();
 			Entity shooter = getOwner();
 			IBullet bullet = (IBullet) getItemRaw().getItem();
-			
+
 			if (isOnFire()) target.setSecondsOnFire(5);
 			int lastHurtResistant = target.invulnerableTime;
 			if (ignoreInvulnerability) target.invulnerableTime = 0;
-			boolean damaged = target.hurt((new IndirectEntityDamageSource("arrow", this, shooter)).setProjectile(), (float) bullet.modifyDamage(damage, this, target, shooter, level));
-			
+			boolean damaged = target.hurt((new IndirectEntityDamageSource("arrow", this, shooter, indirectEntity)).setProjectile(), (float) bullet.modifyDamage(damage, this, target, shooter, level));
+
 			if (damaged && target instanceof LivingEntity) {
 				LivingEntity livingTarget = (LivingEntity)target;
 				if (knockbackStrength > 0) {
@@ -162,7 +165,7 @@ public class BulletEntity extends Fireball {
 	}
 
 	@Override
-	public Packet<?> getAddEntityPacket() {
+	public Packet<ClientGamePacketListener> getAddEntityPacket() {
 		return NetworkHooks.getEntitySpawningPacket(this);
 	}
 
